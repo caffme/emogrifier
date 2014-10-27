@@ -226,6 +226,16 @@ class Emogrifier {
     }
 
     /**
+     * Used in emogrify() preg_replace_callback
+     * 
+     * @param  array $m matches
+     * @return string
+     */
+    protected static function normalizeStyleCallback(array $m) {
+      return strtolower($m[0]);
+    }
+
+    /**
      * Applies the CSS you submit to the HTML you submit.
      *
      * This method places the CSS inline.
@@ -254,9 +264,7 @@ class Emogrifier {
             foreach ($nodesWithStyleAttributes as $node) {
                 $normalizedOriginalStyle = preg_replace_callback(
                     '/[A-z\\-]+(?=\\:)/S',
-                    function (array $m) {
-                        return strtolower($m[0]);
-                    },
+                    array(__CLASS__,'normalizeStyleCallback'),
                     $node->getAttribute('style')
                 );
 
