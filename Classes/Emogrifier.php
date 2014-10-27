@@ -497,9 +497,9 @@ class Emogrifier {
             // get rid of css comment code
             '/\\/\\*.*\\*\\//sU',
             // strip out any import directives
-            '/^\\s*@import\\s[^;]+;/misU',
+            '/\\s*@import\\s[^;]+;/misU',
             // strip remains media enclosures
-            '/^\\s*@media\\s[^{]+{(.*)}\\s*}\\s/misU',
+            '/\\s*@media\\s[^{]+{(.*)}\\s*}\\s*/misU',
         );
 
         $replace = array(
@@ -511,7 +511,7 @@ class Emogrifier {
         // clean CSS before output
         $css = preg_replace($search, $replace, $css);
 
-        return array('css' => $css, 'media' => $media);
+        return array('css' => trim($css), 'media' => trim($media));
     }
 
     /**
