@@ -115,6 +115,13 @@ class Emogrifier {
      */
     public $preserveEncoding = FALSE;
 
+
+    /**
+     * Kludge replacement for 'use' directive in previous lambda funcs.
+     * @var [type]
+     */
+    protected $callbackTemp=null;
+
     /**
      * The constructor.
      *
@@ -226,12 +233,12 @@ class Emogrifier {
     }
 
     /**
-     * Used in emogrify() preg_replace_callback
+     * Used in multiple preg_replace_callback calls
      * 
      * @param  array $m matches
      * @return string
      */
-    protected static function normalizeStyleCallback(array $m) {
+    protected static function matchAsLowerCaseCallback(array $m) {
       return strtolower($m[0]);
     }
 
@@ -264,7 +271,7 @@ class Emogrifier {
             foreach ($nodesWithStyleAttributes as $node) {
                 $normalizedOriginalStyle = preg_replace_callback(
                     '/[A-z\\-]+(?=\\:)/S',
-                    array(__CLASS__,'normalizeStyleCallback'),
+                    array(__CLASS__,'matchAsLowerCaseCallback'),
                     $node->getAttribute('style')
                 );
 
@@ -483,14 +490,14 @@ class Emogrifier {
      * @return array
      */
     private function splitCssAndMediaQuery($css) {
-        $media = '';
-
+        $this->callbackTemp='';
         $css = preg_replace_callback(
             '#@media\\s+(?:only\\s)?(?:[\\s{\(]|screen|all)\\s?[^{]+{.*}\\s*}\\s*#misU',
-            function($matches) use (&$media) {
-                $media .= $matches[0];
-            }, $css
+            array($this,'splitMediaCallback'),
+            $css
         );
+        $media=$this->callbackTemp;
+        $this->callbackTemp=null;
 
         // filter the CSS
         $search = array(
@@ -501,7 +508,7 @@ class Emogrifier {
             // strip remains media enclosures
             '/\\s*@media\\s[^{]+{(.*)}\\s*}\\s*/misU',
         );
-
+        
         $replace = array(
             '',
             '',
@@ -512,6 +519,15 @@ class Emogrifier {
         $css = preg_replace($search, $replace, $css);
 
         return array('css' => trim($css), 'media' => trim($media));
+    }
+
+    /**
+     * Callback for use in splitCssAndMediaQuery
+     * @param  array $matches
+     * @return null
+     */
+    protected function splitMediaCallback($matches) {
+      $this->callbackTemp .= $matches[0];
     }
 
     /**
@@ -611,9 +627,7 @@ class Emogrifier {
     private function translateCssToXpath($paramCssSelector) {
         $cssSelector = ' ' . $paramCssSelector . ' ';
         $cssSelector = preg_replace_callback('/\s+\w+\s+/',
-            function(array $matches) {
-                return strtolower($matches[0]);
-            },
+            array(__CLASS__,'matchAsLowerCaseCallback'),
             $cssSelector
         );
         $cssSelector = trim($cssSelector);
